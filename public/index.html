@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIS – Student Information System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-box">
+    <h1>Student Information System</h1>
+    <p class="subtitle">CPSC 546 – University Portal</p>
+
+    <div id="alert-box"></div>
+
+    <div class="role-select">
+      <button class="role-btn active" data-role="student" onclick="selectRole(this)">Student</button>
+      <button class="role-btn" data-role="professor" onclick="selectRole(this)">Professor</button>
+      <button class="role-btn" data-role="admin" onclick="selectRole(this)">Admin</button>
+    </div>
+
+    <form id="login-form" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@university.edu" required>
+      </div>
+      <div class="form-group" style="margin-bottom:24px">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<script>
+let selectedRole = 'student';
+
+function selectRole(btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedRole = btn.dataset.role;
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, role: selectedRole }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    window.location.href = data.redirect;
+  } catch (err) {
+    document.getElementById('alert-box').innerHTML =
+      `<div class="alert alert-error">${err.message}</div>`;
+  }
+}
+</script>
+</body>
+</html>

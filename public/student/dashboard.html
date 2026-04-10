@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard – SIS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav>
+  <span class="brand">SIS – Student Portal</span>
+  <div class="nav-links">
+    <a href="/student/dashboard.html">Dashboard</a>
+    <a href="/student/courses.html">Courses</a>
+    <a href="/student/schedule.html">My Schedule</a>
+    <a href="/student/history.html">Academic History</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn btn-sm" onclick="logout()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title" id="welcome-msg">Welcome back!</div>
+
+  <div class="stats" id="stats-row">
+    <div class="stat-card">
+      <div class="label">Grade Level</div>
+      <div class="value" id="grade-level">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Units</div>
+      <div class="value" id="total-units">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Major</div>
+      <div class="value" id="major" style="font-size:1.1rem;margin-top:8px">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Enrolled Courses</div>
+      <div class="value" id="enrolled-count">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Current Schedule</div>
+    <div class="table-wrap">
+      <table id="schedule-table">
+        <thead>
+          <tr>
+            <th>Code</th><th>Course</th><th>Units</th>
+            <th>Professor</th><th>Room</th><th>Schedule</th><th>Semester</th>
+          </tr>
+        </thead>
+        <tbody id="schedule-body">
+          <tr><td colspan="7" class="empty">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quick Links</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="/student/courses.html" class="btn btn-primary">Browse & Enroll in Courses</a>
+      <a href="/student/schedule.html" class="btn btn-primary" style="background:#283593">View Full Schedule</a>
+      <a href="/student/history.html" class="btn btn-primary" style="background:#283593">Academic History</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+(async () => {
+  const user = await checkAuth('student');
+  document.getElementById('nav-user').textContent = `${user.firstName} ${user.lastName}`;
+  document.getElementById('welcome-msg').textContent = `Welcome back, ${user.firstName}!`;
+
+  const profile = await apiFetch('/api/students/me');
+  document.getElementById('grade-level').textContent = profile.grade_level || '—';
+  document.getElementById('total-units').textContent = profile.total_units ?? '0';
+  document.getElementById('major').textContent = profile.major || 'Undeclared';
+
+  const schedule = await apiFetch('/api/students/schedule');
+  document.getElementById('enrolled-count').textContent = schedule.length;
+
+  const tbody = document.getElementById('schedule-body');
+  if (schedule.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">No courses enrolled. <a href="/student/courses.html">Browse courses</a></td></tr>`;
+  } else {
+    tbody.innerHTML = schedule.map(r => `
+      <tr>
+        <td><strong>${r.course_code}</strong></td>
+        <td>${r.title}</td>
+        <td>${r.units}</td>
+        <td>${r.prof_first} ${r.prof_last}</td>
+        <td>${r.room || '—'}</td>
+        <td>${r.schedule || '—'}</td>
+        <td>${r.semester}</td>
+      </tr>`).join('');
+  }
+})();
+</script>
+</body>
+</html>

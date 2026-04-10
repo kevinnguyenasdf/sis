@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – SIS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav>
+  <span class="brand">SIS – Admin Portal</span>
+  <div class="nav-links">
+    <a href="/admin/dashboard.html">Dashboard</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn btn-sm" onclick="logout()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title">Admin Dashboard</div>
+  <div id="alert-box"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('students')">Students</button>
+    <button class="tab" onclick="switchTab('professors')">Professors</button>
+    <button class="tab" onclick="switchTab('courses')">Courses &amp; Schedules</button>
+    <button class="tab" onclick="switchTab('transcripts')">Transcripts</button>
+  </div>
+
+  <!-- STUDENTS TAB -->
+  <div class="tab-content active" id="tab-students">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Student Accounts</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('create-student-modal')">+ Add Student</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Major</th><th>Grade Level</th><th>Units</th><th></th></tr></thead>
+          <tbody id="students-body"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFESSORS TAB -->
+  <div class="tab-content" id="tab-professors">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Professor Accounts</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('create-professor-modal')">+ Add Professor</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+          <tbody id="professors-body"><tr><td colspan="3" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSES TAB -->
+  <div class="tab-content" id="tab-courses">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Courses</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('create-course-modal')">+ Add Course</button>
+          <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick="openModal('create-section-modal')">+ Add Section</button>
+          <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick="openModal('create-semester-modal')">+ Add Semester</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Description</th></tr></thead>
+          <tbody id="courses-body"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSCRIPTS TAB -->
+  <div class="tab-content" id="tab-transcripts">
+    <div class="card">
+      <div class="card-title">Generate Transcript</div>
+      <div class="form-grid" style="max-width:400px">
+        <div class="form-group full">
+          <label>Select Student</label>
+          <select id="transcript-student">
+            <option value="">Select student...</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="generateTranscript()">Generate Transcript</button>
+    </div>
+    <div id="transcript-result"></div>
+  </div>
+</div>
+
+<!-- Create Student Modal -->
+<div class="modal-overlay" id="create-student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Student Account</h3>
+      <button class="modal-close" onclick="closeModal('create-student-modal')">&times;</button>
+    </div>
+    <div id="create-student-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name</label><input type="text" id="s-fname"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="s-lname"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="s-email"></div>
+      <div class="form-group full"><label>Password</label><input type="password" id="s-password"></div>
+      <div class="form-group full">
+        <label>Major</label>
+        <select id="s-major"><option value="">Undeclared</option></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createStudent()">Create Account</button>
+  </div>
+</div>
+
+<!-- Create Professor Modal -->
+<div class="modal-overlay" id="create-professor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Professor Account</h3>
+      <button class="modal-close" onclick="closeModal('create-professor-modal')">&times;</button>
+    </div>
+    <div id="create-professor-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name</label><input type="text" id="p-fname"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="p-lname"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="p-email"></div>
+      <div class="form-group full"><label>Password</label><input type="password" id="p-password"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createProfessor()">Create Account</button>
+  </div>
+</div>
+
+<!-- Create Course Modal -->
+<div class="modal-overlay" id="create-course-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Course</h3>
+      <button class="modal-close" onclick="closeModal('create-course-modal')">&times;</button>
+    </div>
+    <div id="create-course-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Course Code</label><input type="text" id="c-code" placeholder="CPSC 101"></div>
+      <div class="form-group"><label>Units</label><input type="number" id="c-units" value="3" min="1" max="6"></div>
+      <div class="form-group full"><label>Title</label><input type="text" id="c-title"></div>
+      <div class="form-group full"><label>Description</label><textarea id="c-desc"></textarea></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createCourse()">Add Course</button>
+  </div>
+</div>
+
+<!-- Create Semester Modal -->
+<div class="modal-overlay" id="create-semester-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Semester</h3>
+      <button class="modal-close" onclick="closeModal('create-semester-modal')">&times;</button>
+    </div>
+    <div id="create-semester-alert"></div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Name</label><input type="text" id="sem-name" placeholder="Fall 2025"></div>
+      <div class="form-group">
+        <label>Season</label>
+        <select id="sem-season">
+          <option>Fall</option><option>Spring</option><option>Summer</option><option>Winter</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Year</label><input type="number" id="sem-year" value="2025"></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="sem-start"></div>
+      <div class="form-group"><label>End Date</label><input type="date" id="sem-end"></div>
+      <div class="form-group full"><label>Drop Deadline</label><input type="date" id="sem-deadline"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createSemester()">Add Semester</button>
+  </div>
+</div>
+
+<!-- Create Section Modal -->
+<div class="modal-overlay" id="create-section-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Section</h3>
+      <button class="modal-close" onclick="closeModal('create-section-modal')">&times;</button>
+    </div>
+    <div id="create-section-alert"></div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Course</label><select id="sec-course"></select></div>
+      <div class="form-group full"><label>Professor</label><select id="sec-prof"></select></div>
+      <div class="form-group full"><label>Semester</label><select id="sec-sem"></select></div>
+      <div class="form-group"><label>Room</label><input type="text" id="sec-room" placeholder="Bldg 101"></div>
+      <div class="form-group"><label>Max Seats</label><input type="number" id="sec-seats" value="30" min="1"></div>
+      <div class="form-group full"><label>Schedule</label><input type="text" id="sec-schedule" placeholder="MWF 10:00–11:00am"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createSection()">Add Section</button>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let students = [], professors = [], courses = [], semesters = [];
+
+(async () => {
+  const user = await checkAuth('admin');
+  document.getElementById('nav-user').textContent = `${user.firstName} ${user.lastName}`;
+  await loadAll();
+})();
+
+async function loadAll() {
+  [students, professors, courses, semesters] = await Promise.all([
+    apiFetch('/api/admin/students'),
+    apiFetch('/api/admin/professors'),
+    apiFetch('/api/courses/all'),
+    apiFetch('/api/courses/semesters/all'),
+  ]);
+  const majors = await apiFetch('/api/admin/majors');
+  renderStudents();
+  renderProfessors();
+  renderCourses();
+  populateDropdowns(majors);
+}
+
+function renderStudents() {
+  const tbody = document.getElementById('students-body');
+  tbody.innerHTML = students.length === 0
+    ? `<tr><td colspan="6" class="empty">No students.</td></tr>`
+    : students.map(s => `<tr>
+        <td>${s.first_name} ${s.last_name}</td>
+        <td>${s.email}</td>
+        <td>${s.major || 'Undeclared'}</td>
+        <td>${s.grade_level}</td>
+        <td>${s.total_units}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.student_id})">Remove</button></td>
+      </tr>`).join('');
+
+  const sel = document.getElementById('transcript-student');
+  sel.innerHTML = '<option value="">Select student...</option>' +
+    students.map(s => `<option value="${s.student_id}">${s.first_name} ${s.last_name} (${s.email})</option>`).join('');
+}
+
+function renderProfessors() {
+  const tbody = document.getElementById('professors-body');
+  tbody.innerHTML = professors.length === 0
+    ? `<tr><td colspan="3" class="empty">No professors.</td></tr>`
+    : professors.map(p => `<tr>
+        <td>${p.first_name} ${p.last_name}</td>
+        <td>${p.email}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteProfessor(${p.professor_id})">Remove</button></td>
+      </tr>`).join('');
+}
+
+function renderCourses() {
+  const tbody = document.getElementById('courses-body');
+  tbody.innerHTML = courses.length === 0
+    ? `<tr><td colspan="4" class="empty">No courses.</td></tr>`
+    : courses.map(c => `<tr>
+        <td><strong>${c.course_code}</strong></td>
+        <td>${c.title}</td>
+        <td>${c.units}</td>
+        <td style="color:#777;font-size:0.85rem">${c.description || '—'}</td>
+      </tr>`).join('');
+}
+
+function populateDropdowns(majors) {
+  document.getElementById('s-major').innerHTML =
+    '<option value="">Undeclared</option>' +
+    majors.map(m => `<option value="${m.major_id}">${m.name}</option>`).join('');
+  document.getElementById('sec-course').innerHTML =
+    courses.map(c => `<option value="${c.course_id}">${c.course_code} – ${c.title}</option>`).join('');
+  document.getElementById('sec-prof').innerHTML =
+    professors.map(p => `<option value="${p.professor_id}">${p.first_name} ${p.last_name}</option>`).join('');
+  document.getElementById('sec-sem').innerHTML =
+    semesters.map(s => `<option value="${s.semester_id}">${s.name}</option>`).join('');
+}
+
+async function createStudent() {
+  try {
+    await apiFetch('/api/admin/students', { method: 'POST', body: {
+      first_name: document.getElementById('s-fname').value,
+      last_name: document.getElementById('s-lname').value,
+      email: document.getElementById('s-email').value,
+      password: document.getElementById('s-password').value,
+      major_id: document.getElementById('s-major').value || null,
+    }});
+    showAlert('alert-box', 'Student account created.', 'success');
+    closeModal('create-student-modal');
+    await loadAll();
+  } catch (err) { showAlert('create-student-alert', err.message); }
+}
+
+async function deleteStudent(id) {
+  if (!confirm('Remove this student account?')) return;
+  try {
+    await apiFetch(`/api/admin/students/${id}`, { method: 'DELETE' });
+    await loadAll();
+  } catch (err) { showAlert('alert-box', err.message); }
+}
+
+async function createProfessor() {
+  try {
+    await apiFetch('/api/admin/professors', { method: 'POST', body: {
+      first_name: document.getElementById('p-fname').value,
+      last_name: document.getElementById('p-lname').value,
+      email: document.getElementById('p-email').value,
+      password: document.getElementById('p-password').value,
+    }});
+    showAlert('alert-box', 'Professor account created.', 'success');
+    closeModal('create-professor-modal');
+    await loadAll();
+  } catch (err) { showAlert('create-professor-alert', err.message); }
+}
+
+async function deleteProfessor(id) {
+  if (!confirm('Remove this professor account?')) return;
+  try {
+    await apiFetch(`/api/admin/professors/${id}`, { method: 'DELETE' });
+    await loadAll();
+  } catch (err) { showAlert('alert-box', err.message); }
+}
+
+async function createCourse() {
+  try {
+    await apiFetch('/api/admin/courses', { method: 'POST', body: {
+      course_code: document.getElementById('c-code').value,
+      title: document.getElementById('c-title').value,
+      description: document.getElementById('c-desc').value,
+      units: parseInt(document.getElementById('c-units').value),
+    }});
+    showAlert('alert-box', 'Course added.', 'success');
+    closeModal('create-course-modal');
+    await loadAll();
+  } catch (err) { showAlert('create-course-alert', err.message); }
+}
+
+async function createSemester() {
+  try {
+    await apiFetch('/api/admin/semesters', { method: 'POST', body: {
+      name: document.getElementById('sem-name').value,
+      season: document.getElementById('sem-season').value,
+      year: parseInt(document.getElementById('sem-year').value),
+      start_date: document.getElementById('sem-start').value || null,
+      end_date: document.getElementById('sem-end').value || null,
+      drop_deadline: document.getElementById('sem-deadline').value || null,
+    }});
+    showAlert('alert-box', 'Semester added.', 'success');
+    closeModal('create-semester-modal');
+    await loadAll();
+  } catch (err) { showAlert('create-semester-alert', err.message); }
+}
+
+async function createSection() {
+  try {
+    await apiFetch('/api/admin/sections', { method: 'POST', body: {
+      course_id: document.getElementById('sec-course').value,
+      professor_id: document.getElementById('sec-prof').value,
+      semester_id: document.getElementById('sec-sem').value,
+      room: document.getElementById('sec-room').value,
+      schedule: document.getElementById('sec-schedule').value,
+      max_seats: parseInt(document.getElementById('sec-seats').value),
+    }});
+    showAlert('alert-box', 'Section added.', 'success');
+    closeModal('create-section-modal');
+  } catch (err) { showAlert('create-section-alert', err.message); }
+}
+
+async function generateTranscript() {
+  const id = document.getElementById('transcript-student').value;
+  if (!id) return showAlert('alert-box', 'Please select a student.');
+  try {
+    const data = await apiFetch('/api/admin/transcripts', { method: 'POST', body: { student_id: id } });
+    const student = data[0] || {};
+    const result = document.getElementById('transcript-result');
+    result.innerHTML = `
+      <div class="card">
+        <div style="margin-bottom:16px">
+          <div style="font-size:1.2rem;font-weight:700">${student.first_name} ${student.last_name}</div>
+          <div style="color:#777;font-size:0.9rem">${student.email} &nbsp;|&nbsp; ${student.grade_level} &nbsp;|&nbsp; ${student.total_units} units &nbsp;|&nbsp; ${student.major || 'Undeclared'}</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Semester</th><th>Grade</th></tr></thead>
+            <tbody>
+              ${data.filter(r => r.course_code).map(r => `
+                <tr>
+                  <td><strong>${r.course_code}</strong></td>
+                  <td>${r.title}</td>
+                  <td>${r.units}</td>
+                  <td>${r.semester} ${r.year}</td>
+                  <td>${gradeBadge(r.grade)}</td>
+                </tr>`).join('') || '<tr><td colspan="5" class="empty">No courses.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch (err) { showAlert('alert-box', err.message); }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+</script>
+</body>
+</html>

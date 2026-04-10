@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professor Dashboard – SIS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav>
+  <span class="brand">SIS – Professor Portal</span>
+  <div class="nav-links">
+    <a href="/professor/dashboard.html">My Classes</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn btn-sm" onclick="logout()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-title">My Classes</div>
+  <div id="alert-box"></div>
+
+  <div id="sections-list"></div>
+</div>
+
+<!-- Roster Modal -->
+<div class="modal-overlay" id="roster-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="roster-title">Class Roster</h3>
+      <button class="modal-close" onclick="closeModal('roster-modal')">&times;</button>
+    </div>
+    <div id="roster-content"></div>
+  </div>
+</div>
+
+<!-- Grade Modal -->
+<div class="modal-overlay" id="grade-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Submit Grade</h3>
+      <button class="modal-close" onclick="closeModal('grade-modal')">&times;</button>
+    </div>
+    <div id="grade-alert"></div>
+    <p id="grade-student-name" style="margin-bottom:16px;color:#555"></p>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Grade</label>
+      <select id="grade-select">
+        <option value="">Select grade...</option>
+        <option>A</option><option>A-</option><option>B+</option><option>B</option>
+        <option>B-</option><option>C+</option><option>C</option><option>C-</option>
+        <option>D</option><option>F</option><option>W</option><option>I</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="submitGrade()">Submit Grade</button>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="history-title">Student History</h3>
+      <button class="modal-close" onclick="closeModal('history-modal')">&times;</button>
+    </div>
+    <div id="history-content"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+let currentEnrollmentId = null;
+
+(async () => {
+  const user = await checkAuth('professor');
+  document.getElementById('nav-user').textContent = `${user.firstName} ${user.lastName}`;
+
+  const sections = await apiFetch('/api/professors/sections');
+  const container = document.getElementById('sections-list');
+
+  if (sections.length === 0) {
+    container.innerHTML = `<div class="card"><p class="empty">No sections assigned to you.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = sections.map(s => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <div style="font-size:1.1rem;font-weight:700;color:#1a237e">${s.course_code} – ${s.title}</div>
+          <div style="color:#777;font-size:0.85rem;margin-top:4px">${s.semester} &nbsp;|&nbsp; ${s.room || 'TBD'} &nbsp;|&nbsp; ${s.schedule || 'TBD'}</div>
+        </div>
+        <div style="text-align:right">
+          ${seatsBadge(s.max_seats - s.enrolled_count, s.max_seats)}
+          <div style="font-size:0.8rem;color:#777;margin-top:4px">${s.enrolled_count}/${s.max_seats} enrolled</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="viewRoster(${s.section_id}, '${s.course_code}')">View Roster</button>
+    </div>`).join('');
+})();
+
+async function viewRoster(sectionId, code) {
+  document.getElementById('roster-title').textContent = `Roster – ${code}`;
+  document.getElementById('roster-content').innerHTML = '<p style="color:#777">Loading...</p>';
+  document.getElementById('roster-modal').classList.add('open');
+
+  const roster = await apiFetch(`/api/professors/sections/${sectionId}/roster`);
+  if (roster.length === 0) {
+    document.getElementById('roster-content').innerHTML = '<p class="empty">No students enrolled.</p>';
+    return;
+  }
+  document.getElementById('roster-content').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Grade Level</th><th>Grade</th><th></th></tr>
+        </thead>
+        <tbody>
+          ${roster.map(s => `
+            <tr>
+              <td>${s.first_name} ${s.last_name}</td>
+              <td>${s.email}</td>
+              <td>${s.grade_level}</td>
+              <td>${gradeBadge(s.grade)}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="openGrade(${s.enrollment_id}, '${s.first_name} ${s.last_name}')">Grade</button>
+                <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e;margin-left:4px" onclick="viewHistory(${s.student_id}, '${s.first_name} ${s.last_name}')">History</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openGrade(enrollmentId, name) {
+  currentEnrollmentId = enrollmentId;
+  document.getElementById('grade-student-name').textContent = `Student: ${name}`;
+  document.getElementById('grade-select').value = '';
+  document.getElementById('grade-alert').innerHTML = '';
+  document.getElementById('grade-modal').classList.add('open');
+}
+
+async function submitGrade() {
+  const grade = document.getElementById('grade-select').value;
+  if (!grade) { showAlert('grade-alert', 'Please select a grade.'); return; }
+  try {
+    await apiFetch(`/api/professors/grades/${currentEnrollmentId}`, { method: 'PUT', body: { grade } });
+    showAlert('grade-alert', 'Grade submitted!', 'success');
+    setTimeout(() => closeModal('grade-modal'), 1000);
+  } catch (err) {
+    showAlert('grade-alert', err.message);
+  }
+}
+
+async function viewHistory(studentId, name) {
+  document.getElementById('history-title').textContent = `History – ${name}`;
+  document.getElementById('history-content').innerHTML = '<p style="color:#777">Loading...</p>';
+  document.getElementById('history-modal').classList.add('open');
+
+  const history = await apiFetch(`/api/professors/student/${studentId}/history`);
+  if (history.length === 0) {
+    document.getElementById('history-content').innerHTML = '<p class="empty">No history available.</p>';
+    return;
+  }
+  document.getElementById('history-content').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Semester</th><th>Grade</th></tr></thead>
+        <tbody>
+          ${history.map(r => `
+            <tr>
+              <td><strong>${r.course_code}</strong></td>
+              <td>${r.title}</td><td>${r.units}</td>
+              <td>${r.semester} ${r.year}</td>
+              <td>${gradeBadge(r.grade)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+</script>
+</body>
+</html>
