@@ -3,3 +3,8 @@ sis.db
 sis.db-shm
 sis.db-wal
 .env
+.env.local
+.env*.local
+*.crt
+*.key
+*.pem

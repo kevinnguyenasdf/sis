@@ -27,7 +27,7 @@
 
 <!-- Roster Modal -->
 <div class="modal-overlay" id="roster-modal">
-  <div class="modal">
+  <div class="modal modal-wide">
     <div class="modal-header">
       <h3 id="roster-title">Class Roster</h3>
       <button class="modal-close" onclick="closeModal('roster-modal')">&times;</button>
@@ -60,7 +60,7 @@
 
 <!-- History Modal -->
 <div class="modal-overlay" id="history-modal">
-  <div class="modal">
+  <div class="modal modal-wide">
     <div class="modal-header">
       <h3 id="history-title">Student History</h3>
       <button class="modal-close" onclick="closeModal('history-modal')">&times;</button>
@@ -72,6 +72,8 @@
 <script src="/js/api.js"></script>
 <script>
 let currentEnrollmentId = null;
+let currentSectionId = null;
+let currentSectionCode = null;
 
 (async () => {
   const user = await checkAuth('professor');
@@ -102,6 +104,8 @@ let currentEnrollmentId = null;
 })();
 
 async function viewRoster(sectionId, code) {
+  currentSectionId = sectionId;
+  currentSectionCode = code;
   document.getElementById('roster-title').textContent = `Roster – ${code}`;
   document.getElementById('roster-content').innerHTML = '<p style="color:#777">Loading...</p>';
   document.getElementById('roster-modal').classList.add('open');
@@ -148,7 +152,10 @@ async function submitGrade() {
   try {
     await apiFetch(`/api/professors/grades/${currentEnrollmentId}`, { method: 'PUT', body: { grade } });
     showAlert('grade-alert', 'Grade submitted!', 'success');
-    setTimeout(() => closeModal('grade-modal'), 1000);
+    setTimeout(() => {
+      closeModal('grade-modal');
+      viewRoster(currentSectionId, currentSectionCode);
+    }, 800);
   } catch (err) {
     showAlert('grade-alert', err.message);
   }
