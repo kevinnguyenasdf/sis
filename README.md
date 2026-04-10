@@ -138,19 +138,6 @@ The app will be available at `http://localhost:3000`.
 
 ---
 
-## Team
-
-| Member | Responsibilities |
-|---|---|
-| Kevin | Introduction, CMMI Gaps, What Could Be Improved, Future Recommendations |
-| Taylor | Product Backlog, Sprint Execution, PP Mapping |
-| Nathan | Estimation, Risk Management, What Worked Well |
-| David | Release Planning, Key Outcomes |
-| Jake | Scrum Process Definition, Definition of Done |
-| Michael | PMC Mapping |
-
----
-
 ## Course
 
 CPSC 546 — Option 1: Managing a Simulated Group Agile Project
