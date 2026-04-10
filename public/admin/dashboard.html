@@ -74,7 +74,7 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Description</th></tr></thead>
+          <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Description</th><th></th></tr></thead>
           <tbody id="courses-body"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
         </table>
       </div>
@@ -202,6 +202,22 @@
   </div>
 </div>
 
+<!-- Edit Description Modal -->
+<div class="modal-overlay" id="edit-desc-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Course Description</h3>
+      <button class="modal-close" onclick="closeModal('edit-desc-modal')">&times;</button>
+    </div>
+    <div id="edit-desc-alert"></div>
+    <div class="form-group full">
+      <label>Description</label>
+      <textarea id="edit-desc-text" rows="4" style="width:100%"></textarea>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="saveDesc()">Save</button>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script>
 let students = [], professors = [], courses = [], semesters = [];
@@ -258,12 +274,13 @@ function renderProfessors() {
 function renderCourses() {
   const tbody = document.getElementById('courses-body');
   tbody.innerHTML = courses.length === 0
-    ? `<tr><td colspan="4" class="empty">No courses.</td></tr>`
+    ? `<tr><td colspan="5" class="empty">No courses.</td></tr>`
     : courses.map(c => `<tr>
         <td><strong>${c.course_code}</strong></td>
         <td>${c.title}</td>
         <td>${c.units}</td>
         <td style="color:#777;font-size:0.85rem">${c.description || '—'}</td>
+        <td><button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick='openEditDesc(${c.course_id}, ${JSON.stringify(c.description || "")})'>Edit</button></td>
       </tr>`).join('');
 }
 
@@ -410,6 +427,25 @@ function switchTab(name) {
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let editingCourseId = null;
+function openEditDesc(courseId, currentDesc) {
+  editingCourseId = courseId;
+  document.getElementById('edit-desc-text').value = currentDesc;
+  openModal('edit-desc-modal');
+}
+
+async function saveDesc() {
+  try {
+    await apiFetch(`/api/admin/courses/${editingCourseId}`, {
+      method: 'PUT',
+      body: { description: document.getElementById('edit-desc-text').value },
+    });
+    showAlert('alert-box', 'Description updated.', 'success');
+    closeModal('edit-desc-modal');
+    await loadAll();
+  } catch (err) { showAlert('edit-desc-alert', err.message); }
+}
 </script>
 </body>
 </html>

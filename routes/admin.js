@@ -108,6 +108,17 @@ router.post('/courses', requireAdmin, async (req, res) => {
   }
 });
 
+// Update course description
+router.put('/courses/:id', requireAdmin, async (req, res) => {
+  const { description } = req.body;
+  try {
+    await db.query(`UPDATE COURSE SET description = ? WHERE course_id = ?`, [description, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 // Define prerequisite
 router.post('/prerequisites', requireAdmin, async (req, res) => {
   const { course_id, required_course_id } = req.body;
