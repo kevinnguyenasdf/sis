@@ -4,7 +4,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: true,
-    ca: process.env.YUGABYTE_CA_CERT,
+    ca: process.env.YUGABYTE_CA_CERT?.replace(/\\n/g, '\n'),
   },
 });
 
