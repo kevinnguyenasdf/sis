@@ -421,23 +421,37 @@ function renderCourses() {
 }
 
 function populateDropdowns(majors) {
-  document.getElementById('s-major').innerHTML =
-    '<option value="">Undeclared</option>' +
-    majors.map(m => `<option value="${m.major_id}">${m.name}</option>`).join('');
-  document.getElementById('sec-course').innerHTML =
-    courses.map(c => `<option value="${c.course_id}">${c.course_code} – ${c.title}</option>`).join('');
+  const courseOptions = courses.map(c => `<option value="${c.course_id}">${c.course_code} – ${c.title}</option>`).join('');
+  const majorOptions = majors.map(m => `<option value="${m.major_id}">${m.name}</option>`).join('');
+  document.getElementById('s-major').innerHTML = '<option value="">Undeclared</option>' + majorOptions;
+  document.getElementById('sec-course').innerHTML = courseOptions;
   document.getElementById('sec-prof').innerHTML =
     professors.map(p => `<option value="${p.professor_id}">${p.first_name} ${p.last_name}</option>`).join('');
   document.getElementById('sec-sem').innerHTML =
     semesters.map(s => `<option value="${s.semester_id}">${s.name}</option>`).join('');
-  const majorOptions = majors.map(m => `<option value="${m.major_id}">${m.name}</option>`).join('');
   document.getElementById('degree-major-select').innerHTML =
     '<option value="">Select a major...</option>' + majorOptions;
   document.getElementById('req-major').innerHTML = majorOptions;
   document.getElementById('req-course').innerHTML = courseOptions;
-  const prereqCourseOptions = courses.map(c => `<option value="${c.course_id}">${c.course_code} – ${c.title}</option>`).join('');
-  document.getElementById('prereq-course').innerHTML = prereqCourseOptions;
-  document.getElementById('prereq-required').innerHTML = prereqCourseOptions;
+  document.getElementById('prereq-course').innerHTML = courseOptions;
+  document.getElementById('prereq-required').innerHTML = courseOptions;
+}
+
+async function createPrereq() {
+  const courseId = document.getElementById('prereq-course').value;
+  const requiredId = document.getElementById('prereq-required').value;
+  if (courseId === requiredId) {
+    showAlert('create-prereq-alert', 'A course cannot be a prerequisite of itself.');
+    return;
+  }
+  try {
+    await apiFetch('/api/admin/prerequisites', { method: 'POST', body: {
+      course_id: courseId,
+      required_course_id: requiredId,
+    }});
+    showAlert('alert-box', 'Prerequisite added.', 'success');
+    closeModal('create-prereq-modal');
+  } catch (err) { showAlert('create-prereq-alert', err.message); }
 }
 
 async function loadRequirements() {
