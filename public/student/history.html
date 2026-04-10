@@ -52,6 +52,9 @@
         </tbody>
       </table>
     </div>
+    <div id="graduation-banner" style="display:none;margin-top:16px;padding:14px 18px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;color:#1b5e20;font-weight:600">
+      You have completed all required courses for your major and are eligible for graduation.
+    </div>
     <div id="progress-summary" style="margin-top:12px;font-size:0.9rem;color:#555"></div>
   </div>
 </div>
@@ -106,6 +109,9 @@
     const totalUnits = progress.reduce((sum, r) => sum + parseInt(r.units), 0);
     document.getElementById('progress-summary').textContent =
       `${completed} of ${total} required courses completed (${completedUnits} of ${totalUnits} units)`;
+    if (completed === total) {
+      document.getElementById('graduation-banner').style.display = '';
+    }
   }
 })();
 </script>
