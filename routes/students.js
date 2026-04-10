@@ -66,4 +66,29 @@ router.get('/history', requireStudent, async (req, res) => {
   }
 });
 
+// Get degree progress for the current student
+router.get('/degree-progress', requireStudent, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT c.course_code, c.title, c.units,
+              CASE WHEN comp.course_id IS NOT NULL THEN true ELSE false END AS completed,
+              comp.grade
+       FROM DEGREE_REQUIREMENT dr
+       JOIN COURSE c ON dr.course_id = c.course_id
+       LEFT JOIN (
+         SELECT sec.course_id, e.grade
+         FROM ENROLLMENT e
+         JOIN SECTION sec ON e.section_id = sec.section_id
+         WHERE e.student_id = ? AND e.status = 'completed'
+       ) comp ON comp.course_id = c.course_id
+       WHERE dr.major_id = (SELECT major_id FROM STUDENT WHERE student_id = ?)
+       ORDER BY c.course_code`,
+      [req.session.user.id, req.session.user.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;

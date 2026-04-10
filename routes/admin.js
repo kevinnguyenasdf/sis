@@ -290,4 +290,47 @@ router.post('/majors', requireAdmin, async (req, res) => {
   }
 });
 
+// Get degree requirements for a major
+router.get('/degree-requirements/:major_id', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT dr.req_id, c.course_id, c.course_code, c.title, c.units
+       FROM DEGREE_REQUIREMENT dr
+       JOIN COURSE c ON dr.course_id = c.course_id
+       WHERE dr.major_id = ?
+       ORDER BY c.course_code`,
+      [req.params.major_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Add a degree requirement
+router.post('/degree-requirements', requireAdmin, async (req, res) => {
+  const { major_id, course_id } = req.body;
+  if (!major_id || !course_id) return res.status(400).json({ error: 'Major and course required.' });
+  try {
+    await db.query(
+      `INSERT INTO DEGREE_REQUIREMENT (major_id, course_id) VALUES (?, ?)`,
+      [major_id, course_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY' || err.code === '23505') return res.status(409).json({ error: 'Already a requirement.' });
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Remove a degree requirement
+router.delete('/degree-requirements/:req_id', requireAdmin, async (req, res) => {
+  try {
+    await db.query(`DELETE FROM DEGREE_REQUIREMENT WHERE req_id = ?`, [req.params.req_id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 module.exports = router;

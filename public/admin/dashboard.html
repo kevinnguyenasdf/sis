@@ -27,6 +27,7 @@
     <button class="tab" onclick="switchTab('professors')">Professors</button>
     <button class="tab" onclick="switchTab('courses')">Courses &amp; Schedules</button>
     <button class="tab" onclick="switchTab('transcripts')">Transcripts</button>
+    <button class="tab" onclick="switchTab('degrees')">Degree Requirements</button>
   </div>
 
   <!-- STUDENTS TAB -->
@@ -70,12 +71,35 @@
           <button class="btn btn-primary btn-sm" onclick="openModal('create-course-modal')">+ Add Course</button>
           <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick="openModal('create-section-modal')">+ Add Section</button>
           <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick="openModal('create-semester-modal')">+ Add Semester</button>
+          <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick="openModal('create-prereq-modal')">+ Add Prerequisite</button>
         </div>
       </div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Code</th><th>Title</th><th>Units</th><th>Description</th><th></th></tr></thead>
           <tbody id="courses-body"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEGREE REQUIREMENTS TAB -->
+  <div class="tab-content" id="tab-degrees">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Degree Requirements</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-requirement-modal')">+ Add Requirement</button>
+      </div>
+      <div class="form-group" style="max-width:300px;margin-bottom:16px">
+        <label>Select Major</label>
+        <select id="degree-major-select" onchange="loadRequirements()">
+          <option value="">Select a major...</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Course</th><th>Units</th><th></th></tr></thead>
+          <tbody id="requirements-body"><tr><td colspan="4" class="empty">Select a major to view requirements.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -199,6 +223,50 @@
       <div class="form-group full"><label>Schedule</label><input type="text" id="sec-schedule" placeholder="MWF 10:00–11:00am"></div>
     </div>
     <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createSection()">Add Section</button>
+  </div>
+</div>
+
+<!-- Create Prerequisite Modal -->
+<div class="modal-overlay" id="create-prereq-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Prerequisite</h3>
+      <button class="modal-close" onclick="closeModal('create-prereq-modal')">&times;</button>
+    </div>
+    <div id="create-prereq-alert"></div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Course</label>
+        <select id="prereq-course"></select>
+      </div>
+      <div class="form-group full">
+        <label>Requires</label>
+        <select id="prereq-required"></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="createPrereq()">Add Prerequisite</button>
+  </div>
+</div>
+
+<!-- Add Requirement Modal -->
+<div class="modal-overlay" id="add-requirement-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Degree Requirement</h3>
+      <button class="modal-close" onclick="closeModal('add-requirement-modal')">&times;</button>
+    </div>
+    <div id="add-requirement-alert"></div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Major</label>
+        <select id="req-major"></select>
+      </div>
+      <div class="form-group full">
+        <label>Course</label>
+        <select id="req-course"></select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="addRequirement()">Add Requirement</button>
   </div>
 </div>
 
@@ -362,6 +430,53 @@ function populateDropdowns(majors) {
     professors.map(p => `<option value="${p.professor_id}">${p.first_name} ${p.last_name}</option>`).join('');
   document.getElementById('sec-sem').innerHTML =
     semesters.map(s => `<option value="${s.semester_id}">${s.name}</option>`).join('');
+  const majorOptions = majors.map(m => `<option value="${m.major_id}">${m.name}</option>`).join('');
+  document.getElementById('degree-major-select').innerHTML =
+    '<option value="">Select a major...</option>' + majorOptions;
+  document.getElementById('req-major').innerHTML = majorOptions;
+  document.getElementById('req-course').innerHTML = courseOptions;
+  const prereqCourseOptions = courses.map(c => `<option value="${c.course_id}">${c.course_code} – ${c.title}</option>`).join('');
+  document.getElementById('prereq-course').innerHTML = prereqCourseOptions;
+  document.getElementById('prereq-required').innerHTML = prereqCourseOptions;
+}
+
+async function loadRequirements() {
+  const majorId = document.getElementById('degree-major-select').value;
+  const tbody = document.getElementById('requirements-body');
+  if (!majorId) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">Select a major to view requirements.</td></tr>`;
+    return;
+  }
+  const data = await apiFetch(`/api/admin/degree-requirements/${majorId}`);
+  tbody.innerHTML = data.length === 0
+    ? `<tr><td colspan="4" class="empty">No requirements defined for this major.</td></tr>`
+    : data.map(r => `<tr>
+        <td><strong>${r.course_code}</strong></td>
+        <td>${r.title}</td>
+        <td>${r.units}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="removeRequirement(${r.req_id})">Remove</button></td>
+      </tr>`).join('');
+}
+
+async function addRequirement() {
+  try {
+    await apiFetch('/api/admin/degree-requirements', { method: 'POST', body: {
+      major_id: document.getElementById('req-major').value,
+      course_id: document.getElementById('req-course').value,
+    }});
+    showAlert('alert-box', 'Requirement added.', 'success');
+    closeModal('add-requirement-modal');
+    document.getElementById('degree-major-select').value = document.getElementById('req-major').value;
+    await loadRequirements();
+  } catch (err) { showAlert('add-requirement-alert', err.message); }
+}
+
+async function removeRequirement(reqId) {
+  if (!confirm('Remove this requirement?')) return;
+  try {
+    await apiFetch(`/api/admin/degree-requirements/${reqId}`, { method: 'DELETE' });
+    await loadRequirements();
+  } catch (err) { showAlert('alert-box', err.message); }
 }
 
 async function createStudent() {
