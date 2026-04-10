@@ -34,12 +34,12 @@
       <table>
         <thead>
           <tr>
-            <th>Code</th><th>Title</th><th>Units</th><th>Professor</th>
+            <th>Code</th><th>Title</th><th>Units</th><th>Prerequisites</th><th>Professor</th>
             <th>Room</th><th>Schedule</th><th>Semester</th><th>Seats</th><th></th>
           </tr>
         </thead>
         <tbody id="courses-body">
-          <tr><td colspan="9" class="empty">Loading...</td></tr>
+          <tr><td colspan="10" class="empty">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -71,7 +71,7 @@ function filterCourses() {
 function renderCourses(courses) {
   const tbody = document.getElementById('courses-body');
   if (courses.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">No courses found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No courses found.</td></tr>`;
     return;
   }
   tbody.innerHTML = courses.map(r => {
@@ -81,6 +81,7 @@ function renderCourses(courses) {
       <td><strong>${r.course_code}</strong></td>
       <td>${r.title}</td>
       <td>${r.units}</td>
+      <td style="color:#777;font-size:0.85rem">${r.prerequisites || 'None'}</td>
       <td>${r.prof_first ? r.prof_first + ' ' + r.prof_last : '—'}</td>
       <td>${r.room || '—'}</td>
       <td>${r.schedule || '—'}</td>

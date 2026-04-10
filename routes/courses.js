@@ -16,7 +16,11 @@ router.get('/', requireAuth, async (req, res) => {
               sec.max_seats, sec.enrolled_count,
               (sec.max_seats - sec.enrolled_count) AS available_seats,
               sem.name AS semester, sem.semester_id,
-              p.first_name AS prof_first, p.last_name AS prof_last
+              p.first_name AS prof_first, p.last_name AS prof_last,
+              (SELECT STRING_AGG(pc.course_code, ', ' ORDER BY pc.course_code)
+               FROM PREREQUISITE pr
+               JOIN COURSE pc ON pr.required_course_id = pc.course_id
+               WHERE pr.course_id = c.course_id) AS prerequisites
        FROM COURSE c
        LEFT JOIN SECTION sec ON c.course_id = sec.course_id
        LEFT JOIN SEMESTER sem ON sec.semester_id = sem.semester_id
@@ -48,7 +52,15 @@ router.get('/:id/prerequisites', requireAuth, async (req, res) => {
 // List all courses (for admin dropdowns)
 router.get('/all', requireAuth, async (req, res) => {
   try {
-    const [rows] = await db.query(`SELECT course_id, course_code, title, units FROM COURSE ORDER BY course_code`);
+    const [rows] = await db.query(
+      `SELECT c.course_id, c.course_code, c.title, c.units,
+              (SELECT STRING_AGG(pc.course_code, ', ' ORDER BY pc.course_code)
+               FROM PREREQUISITE pr
+               JOIN COURSE pc ON pr.required_course_id = pc.course_id
+               WHERE pr.course_id = c.course_id) AS prerequisites
+       FROM COURSE c
+       ORDER BY c.course_code`
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error.' });
