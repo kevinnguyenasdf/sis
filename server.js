@@ -1,6 +1,13 @@
 const express = require('express');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const path = require('path');
+const { Pool } = require('pg');
+
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL?.replace(/[?&]ssl(mode)?=[^&]*/g, '').replace(/[?&]$/, ''),
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+});
 
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/students');
@@ -17,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
+  store: new pgSession({ pool: sessionPool, tableName: 'session' }),
   secret: process.env.SESSION_SECRET || 'sis-secret-key-cpsc546',
   resave: false,
   saveUninitialized: false,
