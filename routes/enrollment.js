@@ -29,10 +29,10 @@ router.post('/enroll', requireStudent, async (req, res) => {
     }
 
     const [existing] = await db.query(
-      `SELECT * FROM ENROLLMENT WHERE student_id = ? AND section_id = ? AND status = 'enrolled'`,
+      `SELECT * FROM ENROLLMENT WHERE student_id = ? AND section_id = ? AND status IN ('enrolled', 'completed')`,
       [student_id, section_id]
     );
-    if (existing.length > 0) return res.status(409).json({ error: 'Already enrolled in this section.' });
+    if (existing.length > 0) return res.status(409).json({ error: 'Already enrolled or completed this section.' });
 
     // Check prerequisites
     const [prereqs] = await db.query(

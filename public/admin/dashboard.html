@@ -39,7 +39,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr><th>Name</th><th>Email</th><th>Major</th><th>Grade Level</th><th>Units</th><th></th></tr></thead>
-          <tbody id="students-body"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          <tbody id="students-body"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -55,7 +55,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
-          <tbody id="professors-body"><tr><td colspan="3" class="empty">Loading...</td></tr></tbody>
+          <tbody id="professors-body"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -202,21 +202,82 @@
   </div>
 </div>
 
-<!-- Edit Description Modal -->
-<div class="modal-overlay" id="edit-desc-modal">
-  <div class="modal">
+<!-- Enrollments Modal -->
+<div class="modal-overlay" id="enrollments-modal">
+  <div class="modal modal-wide">
     <div class="modal-header">
-      <h3>Edit Course Description</h3>
-      <button class="modal-close" onclick="closeModal('edit-desc-modal')">&times;</button>
+      <h3 id="enrollments-title">Current Enrollments</h3>
+      <button class="modal-close" onclick="closeModal('enrollments-modal')">&times;</button>
     </div>
-    <div id="edit-desc-alert"></div>
-    <div class="form-group full">
-      <label>Description</label>
-      <textarea id="edit-desc-text" rows="4" style="width:100%"></textarea>
-    </div>
-    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="saveDesc()">Save</button>
+    <div id="enrollments-content"></div>
   </div>
 </div>
+
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="edit-student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Student</h3>
+      <button class="modal-close" onclick="closeModal('edit-student-modal')">&times;</button>
+    </div>
+    <div id="edit-student-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name</label><input type="text" id="es-fname"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="es-lname"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="es-email"></div>
+      <div class="form-group full">
+        <label>Major</label>
+        <select id="es-major"></select>
+      </div>
+      <div class="form-group full">
+        <label>Grade Level</label>
+        <select id="es-grade">
+          <option>Freshman</option>
+          <option>Sophomore</option>
+          <option>Junior</option>
+          <option>Senior</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="saveStudent()">Save Changes</button>
+  </div>
+</div>
+
+<!-- Edit Professor Modal -->
+<div class="modal-overlay" id="edit-professor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Professor</h3>
+      <button class="modal-close" onclick="closeModal('edit-professor-modal')">&times;</button>
+    </div>
+    <div id="edit-professor-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name</label><input type="text" id="ep-fname"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="ep-lname"></div>
+      <div class="form-group full"><label>Email</label><input type="email" id="ep-email"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="saveProfessor()">Save Changes</button>
+  </div>
+</div>
+
+<!-- Edit Course Modal -->
+<div class="modal-overlay" id="edit-course-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Course</h3>
+      <button class="modal-close" onclick="closeModal('edit-course-modal')">&times;</button>
+    </div>
+    <div id="edit-course-alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Course Code</label><input type="text" id="ec-code"></div>
+      <div class="form-group"><label>Units</label><input type="number" id="ec-units" min="1" max="6"></div>
+      <div class="form-group full"><label>Title</label><input type="text" id="ec-title"></div>
+      <div class="form-group full"><label>Description</label><textarea id="ec-desc" rows="3" style="width:100%"></textarea></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;width:100%" onclick="saveCourse()">Save Changes</button>
+  </div>
+</div>
+
 
 <script src="/js/api.js"></script>
 <script>
@@ -245,14 +306,18 @@ async function loadAll() {
 function renderStudents() {
   const tbody = document.getElementById('students-body');
   tbody.innerHTML = students.length === 0
-    ? `<tr><td colspan="6" class="empty">No students.</td></tr>`
+    ? `<tr><td colspan="7" class="empty">No students.</td></tr>`
     : students.map(s => `<tr>
         <td>${s.first_name} ${s.last_name}</td>
         <td>${s.email}</td>
         <td>${s.major || 'Undeclared'}</td>
         <td>${s.grade_level}</td>
         <td>${s.total_units}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.student_id})">Remove</button></td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick='openEditStudent(${JSON.stringify(s)})'>Edit</button>
+          <button class="btn btn-sm" style="background:#fff3e0;color:#e65100" onclick="openEnrollments(${s.student_id}, '${s.first_name} ${s.last_name}')">Enrollments</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.student_id})">Remove</button>
+        </td>
       </tr>`).join('');
 
   const sel = document.getElementById('transcript-student');
@@ -263,11 +328,14 @@ function renderStudents() {
 function renderProfessors() {
   const tbody = document.getElementById('professors-body');
   tbody.innerHTML = professors.length === 0
-    ? `<tr><td colspan="3" class="empty">No professors.</td></tr>`
+    ? `<tr><td colspan="4" class="empty">No professors.</td></tr>`
     : professors.map(p => `<tr>
         <td>${p.first_name} ${p.last_name}</td>
         <td>${p.email}</td>
-        <td><button class="btn btn-danger btn-sm" onclick="deleteProfessor(${p.professor_id})">Remove</button></td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick='openEditProfessor(${JSON.stringify(p)})'>Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProfessor(${p.professor_id})">Remove</button>
+        </td>
       </tr>`).join('');
 }
 
@@ -280,7 +348,7 @@ function renderCourses() {
         <td>${c.title}</td>
         <td>${c.units}</td>
         <td style="color:#777;font-size:0.85rem">${c.description || '—'}</td>
-        <td><button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick='openEditDesc(${c.course_id}, ${JSON.stringify(c.description || "")})'>Edit</button></td>
+        <td><button class="btn btn-sm" style="background:#e8eaf6;color:#1a237e" onclick='openEditCourse(${JSON.stringify(c)})'>Edit</button></td>
       </tr>`).join('');
 }
 
@@ -428,23 +496,133 @@ function switchTab(name) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-let editingCourseId = null;
-function openEditDesc(courseId, currentDesc) {
-  editingCourseId = courseId;
-  document.getElementById('edit-desc-text').value = currentDesc;
-  openModal('edit-desc-modal');
+let enrollmentsStudentId = null;
+let enrollmentsStudentName = null;
+async function openEnrollments(studentId, name) {
+  enrollmentsStudentId = studentId;
+  enrollmentsStudentName = name;
+  document.getElementById('enrollments-title').textContent = `Enrollments – ${name}`;
+  document.getElementById('enrollments-content').innerHTML = '<p style="color:#777">Loading...</p>';
+  openModal('enrollments-modal');
+  await renderEnrollments();
 }
 
-async function saveDesc() {
+async function renderEnrollments() {
+  const data = await apiFetch(`/api/admin/students/${enrollmentsStudentId}/enrollments`);
+  const el = document.getElementById('enrollments-content');
+  if (data.length === 0) {
+    el.innerHTML = '<p class="empty">No active enrollments.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Course</th><th>Title</th><th>Semester</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${data.map(e => `<tr>
+            <td><strong>${e.course_code}</strong></td>
+            <td>${e.title}</td>
+            <td>${e.semester}</td>
+            <td>${e.status}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="forceDrop(${e.enrollment_id})">Force Drop</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function forceDrop(enrollmentId) {
+  if (!confirm('Force drop this student from the course?')) return;
+  try {
+    await apiFetch(`/api/admin/enrollments/${enrollmentId}`, { method: 'DELETE' });
+    await renderEnrollments();
+    await loadAll();
+  } catch (err) {
+    showAlert('alert-box', err.message);
+  }
+}
+
+let editingStudentId = null;
+function openEditStudent(s) {
+  editingStudentId = s.student_id;
+  document.getElementById('es-fname').value = s.first_name;
+  document.getElementById('es-lname').value = s.last_name;
+  document.getElementById('es-email').value = s.email;
+  document.getElementById('es-grade').value = s.grade_level;
+  const majorSel = document.getElementById('es-major');
+  majorSel.innerHTML = document.getElementById('s-major').innerHTML;
+  majorSel.value = s.major_id || '';
+  openModal('edit-student-modal');
+}
+
+async function saveStudent() {
+  try {
+    await apiFetch(`/api/admin/students/${editingStudentId}`, {
+      method: 'PUT',
+      body: {
+        first_name: document.getElementById('es-fname').value,
+        last_name: document.getElementById('es-lname').value,
+        email: document.getElementById('es-email').value,
+        major_id: document.getElementById('es-major').value || null,
+        grade_level: document.getElementById('es-grade').value,
+      },
+    });
+    showAlert('alert-box', 'Student updated.', 'success');
+    closeModal('edit-student-modal');
+    await loadAll();
+  } catch (err) { showAlert('edit-student-alert', err.message); }
+}
+
+let editingProfessorId = null;
+function openEditProfessor(p) {
+  editingProfessorId = p.professor_id;
+  document.getElementById('ep-fname').value = p.first_name;
+  document.getElementById('ep-lname').value = p.last_name;
+  document.getElementById('ep-email').value = p.email;
+  openModal('edit-professor-modal');
+}
+
+async function saveProfessor() {
+  try {
+    await apiFetch(`/api/admin/professors/${editingProfessorId}`, {
+      method: 'PUT',
+      body: {
+        first_name: document.getElementById('ep-fname').value,
+        last_name: document.getElementById('ep-lname').value,
+        email: document.getElementById('ep-email').value,
+      },
+    });
+    showAlert('alert-box', 'Professor updated.', 'success');
+    closeModal('edit-professor-modal');
+    await loadAll();
+  } catch (err) { showAlert('edit-professor-alert', err.message); }
+}
+
+let editingCourseId = null;
+function openEditCourse(c) {
+  editingCourseId = c.course_id;
+  document.getElementById('ec-code').value = c.course_code;
+  document.getElementById('ec-title').value = c.title;
+  document.getElementById('ec-units').value = c.units;
+  document.getElementById('ec-desc').value = c.description || '';
+  openModal('edit-course-modal');
+}
+
+async function saveCourse() {
   try {
     await apiFetch(`/api/admin/courses/${editingCourseId}`, {
       method: 'PUT',
-      body: { description: document.getElementById('edit-desc-text').value },
+      body: {
+        course_code: document.getElementById('ec-code').value,
+        title: document.getElementById('ec-title').value,
+        units: parseInt(document.getElementById('ec-units').value),
+        description: document.getElementById('ec-desc').value,
+      },
     });
-    showAlert('alert-box', 'Description updated.', 'success');
-    closeModal('edit-desc-modal');
+    showAlert('alert-box', 'Course updated.', 'success');
+    closeModal('edit-course-modal');
     await loadAll();
-  } catch (err) { showAlert('edit-desc-alert', err.message); }
+  } catch (err) { showAlert('edit-course-alert', err.message); }
 }
 </script>
 </body>

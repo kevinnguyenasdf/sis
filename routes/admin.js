@@ -29,6 +29,21 @@ router.post('/students', requireAdmin, async (req, res) => {
   }
 });
 
+// Update student account
+router.put('/students/:id', requireAdmin, async (req, res) => {
+  const { first_name, last_name, email, major_id, grade_level } = req.body;
+  try {
+    await db.query(
+      `UPDATE STUDENT SET first_name = ?, last_name = ?, email = ?, major_id = ?, grade_level = ? WHERE student_id = ?`,
+      [first_name, last_name, email, major_id || null, grade_level, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Email already exists.' });
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 // Delete student account
 router.delete('/students/:id', requireAdmin, async (req, res) => {
   try {
@@ -64,6 +79,21 @@ router.post('/professors', requireAdmin, async (req, res) => {
     await db.query(
       `INSERT INTO PROFESSOR (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)`,
       [first_name, last_name, email, hash]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Email already exists.' });
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Update professor account
+router.put('/professors/:id', requireAdmin, async (req, res) => {
+  const { first_name, last_name, email } = req.body;
+  try {
+    await db.query(
+      `UPDATE PROFESSOR SET first_name = ?, last_name = ?, email = ? WHERE professor_id = ?`,
+      [first_name, last_name, email, req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -108,13 +138,17 @@ router.post('/courses', requireAdmin, async (req, res) => {
   }
 });
 
-// Update course description
+// Update course
 router.put('/courses/:id', requireAdmin, async (req, res) => {
-  const { description } = req.body;
+  const { course_code, title, units, description } = req.body;
   try {
-    await db.query(`UPDATE COURSE SET description = ? WHERE course_id = ?`, [description, req.params.id]);
+    await db.query(
+      `UPDATE COURSE SET course_code = ?, title = ?, units = ?, description = ? WHERE course_id = ?`,
+      [course_code, title, units, description || null, req.params.id]
+    );
     res.json({ success: true });
   } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Course code already exists.' });
     res.status(500).json({ error: 'Server error.' });
   }
 });
@@ -193,6 +227,42 @@ router.post('/transcripts', requireAdmin, async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Get enrollments for a student
+router.get('/students/:id/enrollments', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT e.enrollment_id, e.status, e.grade, c.course_code, c.title, sem.name AS semester
+       FROM ENROLLMENT e
+       JOIN SECTION sec ON e.section_id = sec.section_id
+       JOIN COURSE c ON sec.course_id = c.course_id
+       JOIN SEMESTER sem ON sec.semester_id = sem.semester_id
+       WHERE e.student_id = ? AND e.status = 'enrolled'
+       ORDER BY sem.year DESC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Force drop a student from a section
+router.delete('/enrollments/:enrollmentId', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT section_id FROM ENROLLMENT WHERE enrollment_id = ? AND status = 'enrolled'`,
+      [req.params.enrollmentId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Active enrollment not found.' });
+
+    await db.query(`UPDATE ENROLLMENT SET status = 'dropped' WHERE enrollment_id = ?`, [req.params.enrollmentId]);
+    await db.query(`UPDATE SECTION SET enrolled_count = enrolled_count - 1 WHERE section_id = ?`, [rows[0].section_id]);
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: 'Server error.' });
   }
 });
