@@ -312,13 +312,17 @@ router.post('/degree-requirements', requireAdmin, async (req, res) => {
   const { major_id, course_id } = req.body;
   if (!major_id || !course_id) return res.status(400).json({ error: 'Major and course required.' });
   try {
+    const [existing] = await db.query(
+      `SELECT req_id FROM DEGREE_REQUIREMENT WHERE major_id = ? AND course_id = ?`,
+      [major_id, course_id]
+    );
+    if (existing.length > 0) return res.status(409).json({ error: 'Already a requirement for this major.' });
     await db.query(
       `INSERT INTO DEGREE_REQUIREMENT (major_id, course_id) VALUES (?, ?)`,
       [major_id, course_id]
     );
     res.json({ success: true });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY' || err.code === '23505') return res.status(409).json({ error: 'Already a requirement.' });
     res.status(500).json({ error: 'Server error.' });
   }
 });
