@@ -1,10 +1,11 @@
 const { Pool } = require('pg');
 
+// Strip SSL params from connection string so the pool ssl option takes full control
+const connectionString = process.env.DATABASE_URL?.replace(/[?&]ssl(mode)?=[^&]*/g, '').replace(/[?&]$/, '');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  connectionString,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 // Convert SQLite-style ? placeholders to PostgreSQL $1, $2, ...
