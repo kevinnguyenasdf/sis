@@ -30,7 +30,8 @@ router.get('/schedule', requireStudent, async (req, res) => {
     const [rows] = await db.query(
       `SELECT e.enrollment_id, c.course_code, c.title, c.units,
               sec.room, sec.schedule, sem.name AS semester,
-              e.status, e.grade, p.first_name AS prof_first, p.last_name AS prof_last
+              sem.drop_deadline, e.status, e.grade,
+              p.first_name AS prof_first, p.last_name AS prof_last
        FROM ENROLLMENT e
        JOIN SECTION sec ON e.section_id = sec.section_id
        JOIN COURSE c ON sec.course_id = c.course_id
