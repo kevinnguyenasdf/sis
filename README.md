@@ -75,6 +75,8 @@ YugabyteDB (hosted, PostgreSQL-compatible)
 
 ## Database Schema
 
+![Database Schema](image.png)
+
 ```
 MAJOR              (major_id, name, department)
 STUDENT            (student_id, first_name, last_name, email, password_hash, grade_level, total_units, major_id)
